@@ -39,7 +39,7 @@ __usage__ = """
 make_libraries.py generates the rosserial library files.  It
 requires the location of your project folder.
 
-rosrun rosserial_embeddedlinux make_libraries.py <output_path>
+rosrun rosserial_86duino make_libraries.py <output_path>
 """
 
 import rospkg
@@ -83,10 +83,10 @@ print "\nExporting to %s" % path
 rospack = rospkg.RosPack()
 
 # copy ros_lib stuff in
-rosserial_arduino_dir = rospack.get_path(THIS_PACKAGE)
-shutil.copytree(rosserial_arduino_dir+"/src/ros_lib", path+"/ros_lib")
+rosserial_86duino_dir = rospack.get_path(THIS_PACKAGE)
+shutil.copytree(rosserial_86duino_dir+"/src/ros_lib", path+"/ros_lib")
 rosserial_client_copy_files(rospack, path+"/ros_lib/")
-shutil.copytree(rosserial_arduino_dir+"/src/examples", path+"/examples")
+shutil.copytree(rosserial_86duino_dir+"/src/examples", path+"/examples")
 
 # generate messages
 rosserial_generate(rospack, path+"/ros_lib", ROS_TO_EMBEDDED_TYPES)
