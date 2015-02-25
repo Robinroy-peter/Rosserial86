@@ -1,5 +1,5 @@
 <package>
-  <name>rosserial_embeddedlinux</name>
+  <name>rosserial_86duino</name>
   <version>0.6.3</version>
   <description>
     Libraries and examples for ROSserial usage on 86Duino on Linux, DOS, Windows Enviroments
