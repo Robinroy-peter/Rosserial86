@@ -1,6 +1,6 @@
-## rosserial
+## rosserial and rosserial_86Duino
 
-This repo is ported from https://kforge.ros.org/rosserial/hg. It has been catkinized and updated for ROS Groovy and onward.
+This repo is ported from https://github.com/ros-drivers/rosserial. It makes rosserial support 86Duino, a Arduino-compatible board.
 
 ### Changes for Indigo
 
