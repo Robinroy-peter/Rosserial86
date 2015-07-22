@@ -1,4 +1,4 @@
-## rosserial and rosserial_86Duino
+## rosserial and rosserial_86duino
 
 This repo is ported from https://github.com/ros-drivers/rosserial. It makes rosserial support 86Duino, a Arduino-compatible board.
 
