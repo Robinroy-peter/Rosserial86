@@ -31,8 +31,10 @@
 	#include <stdio.h>
 	#include <stdlib.h>
 	#include <string.h>
+	#include <queue>
 	#include <HardwareSerial.h>
 	#include <io.h>
+	#include <../ESP8266/ESP8266.h>
 
 #elif defined(DMP_DOS_DJGPP)
 
@@ -106,10 +108,11 @@ class Vortex86Handle
 {
 public:
 #if defined(_86DUINO)
-	Vortex86Handle() : sock(SWS_INVALID_SOCKET), port(NULL), port_(NULL) {}
+	Vortex86Handle() : sock(SWS_INVALID_SOCKET), port(NULL), port_(NULL), wifi() {}
 	SWS_SOCKET sock;
 	HardwareSerial *port;
 	Serial_ *port_;
+	ESP8266 wifi;
 #elif defined(DMP_DOS_DJGPP)
 	Vortex86Handle() : sock(SWS_INVALID_SOCKET), port(NULL) {}
 	SWS_SOCKET sock;
@@ -243,6 +246,29 @@ void tcp_write(Vortex86Handle *p, unsigned char *pBuf, int nByte)
 	}
 }
 
+int wifi_read(Vortex86Handle *p)
+{
+#if defined(_86DUINO)
+	if((p->wifi).m_puart->available() > 0) {
+        (p->wifi).wifi_data.push( (p->wifi).m_puart->read() );
+    }
+	if( !(p->wifi).wifi_data.empty() )
+	{
+		int ch = (p->wifi).wifi_data.front();
+		(p->wifi).wifi_data.pop();
+		return ch;
+	}
+	return -1;
+#endif
+}
+
+void wifi_write(Vortex86Handle *p, unsigned char *pBuf, int nByte)
+{
+#if defined(_86DUINO)
+	(p->wifi).send(pBuf, nByte);
+#endif
+}
+
 class Vortex86Hardware
 {
 public:
@@ -255,7 +281,7 @@ public:
 	
 	int  (*read)   (Vortex86Handle *p);
 	void (*write)  (Vortex86Handle *p, unsigned char *pBuf, int nByte);
-
+	
 	Vortex86Handle handle;
 	
 private:
@@ -568,8 +594,31 @@ void Vortex86Hardware::init(char *p, long baud)
 		this->read = serial_read;
 		this->write = serial_write;
 		
+	} else if((pName[0]=='w' || pName[0]=='W') && (pName[1]=='l' || pName[1]=='L') && (pName[2]=='_') ){
+		//WiFi
+		#if defined(_86DUINO)
+			char *np = &pName[3];
+			char *IP;
+
+			char *PortNumStr;
+			long PortNum;
+			
+			IP = strtok(np, ":");
+			PortNumStr = strtok(NULL, ":");
+			PortNum = 0;
+			if (PortNumStr != NULL) {
+				PortNum = strtol(PortNumStr, NULL, 10);
+			}
+			if (PortNum == 0) {
+				PortNum = DEFAULT_PORTNUM;
+			}
+
+			handle.wifi.createTCP(IP, PortNum);
+			
+			this->read = wifi_read;
+			this->write = wifi_write;
+		#endif
 	} else {
-	
 		/* Initial Ethernet on 86Duino and DOS. */
 		#if defined(_86DUINO) || defined(DMP_DOS_DJGPP)
 			char *IP;
@@ -1003,6 +1052,34 @@ bool x86DuinoHardware::setEthernet(char *ip, char *dns, char *gateway, char *sub
 #else
 	return true;
 #endif
+}
+
+bool x86DuinoHardware::setESP8266(HardwareSerial &uart, uint32_t baud)
+{
+#if defined(_86DUINO)
+	x86->handle.wifi.init(uart, baud);
+	return true;
+#endif
+	return false;
+}
+
+bool x86DuinoHardware::setESP8266(HardwareSerial &uart, uint32_t baud, int pin)
+{
+#if defined(_86DUINO)
+	pinMode( pin, OUTPUT);
+	digitalWrite( pin, HIGH);
+	x86->handle.wifi.init(uart, baud);
+	return true;
+#endif
+	return false;
+}
+
+bool x86DuinoHardware::setWiFi(char *ssid, char *key)
+{
+#if defined(_86DUINO)
+	return x86->handle.wifi.joinAP(ssid, key);
+#endif
+	return false;
 }
 
 #endif
