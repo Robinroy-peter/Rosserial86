@@ -34,7 +34,6 @@
 	#include <queue>
 	#include <HardwareSerial.h>
 	#include <io.h>
-	#include <../ESP8266/ESP8266.h>
 
 #elif defined(DMP_DOS_DJGPP)
 
