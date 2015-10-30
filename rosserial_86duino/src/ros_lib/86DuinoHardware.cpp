@@ -1053,32 +1053,25 @@ bool x86DuinoHardware::setEthernet(char *ip, char *dns, char *gateway, char *sub
 #endif
 }
 
+#if defined(_86DUINO)
 bool x86DuinoHardware::setESP8266(HardwareSerial &uart, uint32_t baud)
 {
-#if defined(_86DUINO)
 	x86->handle.wifi.init(uart, baud);
 	return true;
-#endif
-	return false;
 }
 
 bool x86DuinoHardware::setESP8266(HardwareSerial &uart, uint32_t baud, int pin)
 {
-#if defined(_86DUINO)
 	pinMode( pin, OUTPUT);
 	digitalWrite( pin, HIGH);
 	x86->handle.wifi.init(uart, baud);
 	return true;
-#endif
-	return false;
 }
 
 bool x86DuinoHardware::setWiFi(char *ssid, char *key)
 {
-#if defined(_86DUINO)
 	return x86->handle.wifi.joinAP(ssid, key);
-#endif
-	return false;
 }
+#endif
 
 #endif
