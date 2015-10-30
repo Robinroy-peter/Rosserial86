@@ -5,6 +5,7 @@
 	#include <../Adafruit_CC3000/Adafruit_CC3000.h>
 	#include <../Adafruit_CC3000/ccspi.h>
 	#include <../SPI/SPI.h>
+	#include <../ESP8266/ESP8266.h>
 #endif
 
 class Vortex86Hardware;
