@@ -50,6 +50,7 @@
 	#include <vortex86/utilities/com.h>
 	#include <vortex86/utilities/sws_sock.h>
 	#include <vortex86/utilities/sws_cfg.h>
+	static bool usedWiFi = false;
 	static bool SwsInited1 = false;
 	static bool SwsInited2 = false;
 	static bool swssock_initialize(char *options)
@@ -619,104 +620,101 @@ void Vortex86Hardware::init(char *p, long baud)
 		this->read = serial_read;
 		this->write = serial_write;
 		
-	} else if(usedWiFi){
-		//WiFi
-		#if defined(_86DUINO)
-			char *IP;
-
-			char *PortNumStr;
-			long PortNum;
-			
-			IP = strtok(pName, ":");
-			PortNumStr = strtok(NULL, ":");
-			PortNum = 0;
-			if (PortNumStr != NULL) {
-				PortNum = strtol(PortNumStr, NULL, 10);
-			}
-			if (PortNum == 0) {
-				PortNum = DEFAULT_PORTNUM;
-			}
-
-			handle.wifi.createTCP(IP, PortNum);
-			
-			this->read = wifi_read;
-			this->write = wifi_write;
-		#endif
 	} else {
 		/* Initial Ethernet on 86Duino and DOS. */
 		#if defined(_86DUINO) || defined(DMP_DOS_DJGPP)
 			char *IP;
 			char *PortNumStr;
 			long PortNum;
-			int ret;
-			int flag = 1;
-			SWS_u_long lArg = 1;
-			struct SWS_sockaddr_in serv_addr;
-			struct SWS_hostent *server;
-			
-			#ifdef ROS_USE_SWSSOCK_LIB__
-				if (swssock_initialize(DEFAULT_NET_OPTIONS) == false) {
-					printf("init(): SwsSock library startup fail.\n");
-					exit(-1);
+			if (usedWiFi)
+			{
+				IP = strtok(pName, ":");
+				PortNumStr = strtok(NULL, ":");
+				PortNum = 0;
+				if (PortNumStr != NULL) {
+					PortNum = strtol(PortNumStr, NULL, 10);
 				}
-				SwsInited2 = true;
-			#endif
-			
-			IP = strtok(pName, ":");
-			PortNumStr = strtok(NULL, ":");
-			PortNum = 0;
-			if (PortNumStr != NULL) {
-				PortNum = strtol(PortNumStr, NULL, 10);
+				if (PortNum == 0) {
+					PortNum = DEFAULT_PORTNUM;
+				}
+	
+				handle.wifi.createTCP(IP, PortNum);
+				
+				this->read = wifi_read;
+				this->write = wifi_write;
 			}
-			if (PortNum == 0) {
-				PortNum = DEFAULT_PORTNUM;
-			}
-
-			handle.sock = SWS_socket(SWS_AF_INET, SWS_SOCK_STREAM, 0);
-			if (handle.sock == SWS_INVALID_SOCKET) {
-				printf("init(): open socket fail.\n");
-				SWS_SockExit();
-				#ifdef _86DUINO
-					return;
-				#else
-					exit(-1);
+			else
+			{
+				int ret;
+				int flag = 1;
+				SWS_u_long lArg = 1;
+				struct SWS_sockaddr_in serv_addr;
+				struct SWS_hostent *server;
+				
+				#ifdef ROS_USE_SWSSOCK_LIB__
+					if (swssock_initialize(DEFAULT_NET_OPTIONS) == false) {
+						printf("init(): SwsSock library startup fail.\n");
+						exit(-1);
+					}
+					SwsInited2 = true;
 				#endif
+				
+				IP = strtok(pName, ":");
+				PortNumStr = strtok(NULL, ":");
+				PortNum = 0;
+				if (PortNumStr != NULL) {
+					PortNum = strtol(PortNumStr, NULL, 10);
+				}
+				if (PortNum == 0) {
+					PortNum = DEFAULT_PORTNUM;
+				}
+	
+				handle.sock = SWS_socket(SWS_AF_INET, SWS_SOCK_STREAM, 0);
+				if (handle.sock == SWS_INVALID_SOCKET) {
+					printf("init(): open socket fail.\n");
+					SWS_SockExit();
+					#ifdef _86DUINO
+						return;
+					#else
+						exit(-1);
+					#endif
+				}
+				ret = SWS_setsockopt(handle.sock, SWS_IPPROTO_TCP, SWS_TCP_NODELAY, (char*)&flag, sizeof(flag));
+				if (ret == -1) {
+					printf("init(): Could not setsockopt(TCP_NODELAY)\n");
+					SWS_close(handle.sock);
+					SWS_SockExit();
+					#if defined(_86DUINO)
+						return;
+					#else
+						exit(-1);
+					#endif
+				}
+				
+				printf("Connecting to TCP server at %s:%ld....\n", IP, PortNum);
+				bzero((char *)&serv_addr, sizeof(serv_addr));
+				serv_addr.sin_family = SWS_AF_INET;
+				serv_addr.sin_port = SWS_htons(PortNum);
+				server = SWS_gethostbyname(IP);
+				if (server == NULL) {
+					serv_addr.sin_addr.SWS_s_addr = SWS_inet_addr(IP);
+				} else {
+					bcopy((char *)server->SWS_h_addr, (char *)&serv_addr.sin_addr.SWS_s_addr, server->h_length);
+				}
+				if (SWS_connect(handle.sock,(struct SWS_sockaddr *) &serv_addr,sizeof(serv_addr)) < 0) {
+					printf("init(): connect to server fail.\n");
+					SWS_close(handle.sock);
+					SWS_SockExit();
+					#if defined(_86DUINO)
+						return;
+					#else
+						exit(-1);
+					#endif
+				}
+				SWS_ioctl(handle.sock, SWS_FIONBIO, &lArg);
+				
+				printf("Connet to %s:%ld successfully\n", IP, PortNum);
 			}
-			ret = SWS_setsockopt(handle.sock, SWS_IPPROTO_TCP, SWS_TCP_NODELAY, (char*)&flag, sizeof(flag));
-			if (ret == -1) {
-				printf("init(): Could not setsockopt(TCP_NODELAY)\n");
-				SWS_close(handle.sock);
-				SWS_SockExit();
-				#if defined(_86DUINO)
-					return;
-				#else
-					exit(-1);
-				#endif
-			}
-			
-			printf("Connecting to TCP server at %s:%ld....\n", IP, PortNum);
-			bzero((char *)&serv_addr, sizeof(serv_addr));
-			serv_addr.sin_family = SWS_AF_INET;
-			serv_addr.sin_port = SWS_htons(PortNum);
-			server = SWS_gethostbyname(IP);
-			if (server == NULL) {
-				serv_addr.sin_addr.SWS_s_addr = SWS_inet_addr(IP);
-			} else {
-				bcopy((char *)server->SWS_h_addr, (char *)&serv_addr.sin_addr.SWS_s_addr, server->h_length);
-			}
-			if (SWS_connect(handle.sock,(struct SWS_sockaddr *) &serv_addr,sizeof(serv_addr)) < 0) {
-				printf("init(): connect to server fail.\n");
-				SWS_close(handle.sock);
-				SWS_SockExit();
-				#if defined(_86DUINO)
-					return;
-				#else
-					exit(-1);
-				#endif
-			}
-			SWS_ioctl(handle.sock, SWS_FIONBIO, &lArg);
-			
-			printf("Connet to %s:%ld successfully\n", IP, PortNum);
 			
 		/* Initial Ethernet on Linux. */
 		#elif defined(DMP_LINUX)
@@ -981,6 +979,7 @@ bool x86DuinoHardware::setDhcp()
 	
 	return false;
 #else
+	usedWiFi = false;
 	return true;
 #endif
 }
@@ -995,6 +994,7 @@ bool x86DuinoHardware::setEthernet(char *ip)
 							 , 0xFFUL & (number >> 16));
 	return setEthernet(ip, dns);
 #else
+	usedWiFi = false;
 	return true;
 #endif
 }
@@ -1009,6 +1009,7 @@ bool x86DuinoHardware::setEthernet(char *ip, char *dns)
 							     , 0xFFUL & (number >> 16));
 	return setEthernet(ip, dns, gateway);
 #else
+	usedWiFi = false;
 	return true;
 #endif
 }
@@ -1019,14 +1020,15 @@ bool x86DuinoHardware::setEthernet(char *ip, char *dns, char *gateway)
 	char subnet[] = "255.255.255.0";
 	return setEthernet(ip, dns, gateway, subnet);
 #else
+	usedWiFi = false;
 	return true;
 #endif
 }
 
 bool x86DuinoHardware::setEthernet(char *ip, char *dns, char *gateway, char *subnet)
 {
-#ifdef ROS_USE_SWSSOCK_LIB__
 	usedWiFi = false;
+#ifdef ROS_USE_SWSSOCK_LIB__
 	FILE *opt;
 	unsigned long number;
 	
@@ -1075,7 +1077,6 @@ bool x86DuinoHardware::setEthernet(char *ip, char *dns, char *gateway, char *sub
 	
 	return false;
 #else
-	usedWiFi = false;
 	return true;
 #endif
 }
