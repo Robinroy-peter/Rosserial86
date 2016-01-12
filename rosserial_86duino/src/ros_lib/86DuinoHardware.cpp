@@ -34,6 +34,7 @@
 	#include <queue>
 	#include <HardwareSerial.h>
 	#include <io.h>
+	static bool usedWiFi = false;
 
 #elif defined(DMP_DOS_DJGPP)
 
@@ -72,6 +73,12 @@
 	/* Works on Linux */
 	#define DEFAULT_PORT        "/dev/ttyAM1"
 	#define DEFAULT_PORTNUM     11411
+	#define  COM1_TX    (0x9A)
+	#define  COM1_RX    (0x9B)
+	#define  COM2_TX    (0x9E)
+	#define  COM2_RX    (0x9F)
+	#define  COM3_TX    (0x9C)
+	#define  COM3_RX    (0x9D)
 	#include <stdio.h>
 	#include <stdlib.h>
 	#include <unistd.h>
@@ -88,6 +95,7 @@
 	#include <netinet/tcp.h>
 	#include <netdb.h>
 	#include <assert.h>
+	#include <io.h>
 
 
 #elif defined(DMP_WINDOWS)
@@ -504,6 +512,24 @@ void Vortex86Hardware::init(char *p, long baud)
 			options.c_oflag &= ~OPOST;
 			tcsetattr(handle.fd, TCSANOW, &options);
 			
+			unsigned short crossbar_ioaddr = sb_Read16(0x64)&0xfffe;
+			
+			if(com == 0)
+			{
+				io_outpb(crossbar_ioaddr + COM1_TX, 0x08);
+				io_outpb(crossbar_ioaddr + COM1_RX, 0x08);
+			}
+			else if(com == 1)
+			{
+				io_outpb(crossbar_ioaddr + COM2_TX, 0x08);
+				io_outpb(crossbar_ioaddr + COM2_RX, 0x08);
+			}
+			else if(com == 2)
+			{
+				io_outpb(crossbar_ioaddr + COM3_TX, 0x08);
+				io_outpb(crossbar_ioaddr + COM3_RX, 0x08);
+			}
+			
 			printf("Serial port \"%s\" is opened successfully.\n", &pName[0]);
 		
 		/* Initial Serial on Windows. */		
@@ -593,16 +619,15 @@ void Vortex86Hardware::init(char *p, long baud)
 		this->read = serial_read;
 		this->write = serial_write;
 		
-	} else if((pName[0]=='w' || pName[0]=='W') && (pName[1]=='l' || pName[1]=='L') && (pName[2]=='_') ){
+	} else if(usedWiFi){
 		//WiFi
 		#if defined(_86DUINO)
-			char *np = &pName[3];
 			char *IP;
 
 			char *PortNumStr;
 			long PortNum;
 			
-			IP = strtok(np, ":");
+			IP = strtok(pName, ":");
 			PortNumStr = strtok(NULL, ":");
 			PortNum = 0;
 			if (PortNumStr != NULL) {
@@ -1001,6 +1026,7 @@ bool x86DuinoHardware::setEthernet(char *ip, char *dns, char *gateway)
 bool x86DuinoHardware::setEthernet(char *ip, char *dns, char *gateway, char *subnet)
 {
 #ifdef ROS_USE_SWSSOCK_LIB__
+	usedWiFi = false;
 	FILE *opt;
 	unsigned long number;
 	
@@ -1049,6 +1075,7 @@ bool x86DuinoHardware::setEthernet(char *ip, char *dns, char *gateway, char *sub
 	
 	return false;
 #else
+	usedWiFi = false;
 	return true;
 #endif
 }
@@ -1070,6 +1097,7 @@ bool x86DuinoHardware::setESP8266(HardwareSerial &uart, uint32_t baud, int pin)
 
 bool x86DuinoHardware::setWiFi(char *ssid, char *key)
 {
+	usedWiFi = true;
 	return x86->handle.wifi.joinAP(ssid, key);
 }
 #endif
