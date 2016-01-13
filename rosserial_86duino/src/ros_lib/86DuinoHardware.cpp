@@ -639,9 +639,6 @@ void Vortex86Hardware::init(char *p, long baud)
 				}
 	
 				handle.wifi.createTCP(IP, PortNum);
-				
-				this->read = wifi_read;
-				this->write = wifi_write;
 			}
 			else
 			{
@@ -839,8 +836,21 @@ void Vortex86Hardware::init(char *p, long baud)
 			
 		#endif
 		
-		this->read = tcp_read;
-		this->write = tcp_write;
+		#if defined(_86DUINO)
+			if(usedWiFi)
+			{
+				this->read = wifi_read;
+				this->write = wifi_write;
+			}
+			else
+			{
+				this->read = tcp_read;
+				this->write = tcp_write;
+			}
+		#else
+			this->read = tcp_read;
+			this->write = tcp_write;
+		#endif
 	}
 	initTime = this->time();
 }
