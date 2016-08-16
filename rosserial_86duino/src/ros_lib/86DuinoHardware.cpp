@@ -31,7 +31,6 @@
 	#include <stdio.h>
 	#include <stdlib.h>
 	#include <string.h>
-	#include <queue>
 	#include <HardwareSerial.h>
 	#include <io.h>
 	static bool usedWiFi = false;
