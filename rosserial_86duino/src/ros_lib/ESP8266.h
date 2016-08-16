@@ -22,14 +22,6 @@
 #define __ESP8266_H__
 
 #include "Arduino.h"
-
-#ifdef min
-	#undef min
-#endif
-#ifdef max
-	#undef max
-#endif
-
 #include <queue>
 
 //#define ESP8266_USE_SOFTWARE_SERIAL
