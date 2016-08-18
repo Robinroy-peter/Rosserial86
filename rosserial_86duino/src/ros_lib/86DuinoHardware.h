@@ -2,7 +2,7 @@
 #define ROS_86DUINO_HARDWARE_H
 
 #if defined(_86DUINO)
-	#include <ESP8266.h>
+	#include "Arduino.h"
 #endif
 
 class Vortex86Hardware;
