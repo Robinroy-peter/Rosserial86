@@ -25,8 +25,8 @@
 #define ROS_86DUINO_HARDWARE_CPP
 
 #if defined(_86DUINO)
-	#define NOMINMAX
-	#include <ESP8266.h>
+	#define NOMINMAX 
+	#include <ESP82664ros.h>
 #endif
 #include <86DuinoConfig.h>
 #include <86DuinoHardware.h>
@@ -58,6 +58,7 @@
 	#include <stdio.h>
 	#include <stdlib.h>
 	#include <string.h>
+	#include <queue>
 	#include <HardwareSerial.h>
 	#include <io.h>
 	static bool usedWiFi = false;
@@ -146,7 +147,7 @@ public:
 	SWS_SOCKET sock;
 	HardwareSerial *port;
 	Serial_ *port_;
-	ESP8266 wifi;
+	ESP82664ros wifi;
 #elif defined(DMP_DOS_DJGPP)
 	Vortex86Handle() : sock(SWS_INVALID_SOCKET), port(NULL) {}
 	SWS_SOCKET sock;
